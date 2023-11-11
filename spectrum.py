@@ -121,13 +121,15 @@ class Spectrum(Container, ScreensaverSpectrum):
     def init_container(self):
         """ Initialize container """
         
-        c = Component(self.util)
+        c = Component(self.util) # bgr
         self.add_component(c)
         for _ in range(self.config[SIZE]):
             c = Component(self.util)
             self.add_component(c)
             c = Component(self.util)
-            self.add_component(c)        
+            self.add_component(c)
+        c = Component(self.util) # fgr
+        self.add_component(c)
     
     def init_spectrums(self):
         """ Initialize lists of images """
@@ -135,6 +137,7 @@ class Spectrum(Container, ScreensaverSpectrum):
         self.bgr = self.get_backgrounds()
         self.bar = self.get_bars()
         self.reflection = self.get_reflections()
+        self.fgr = self.get_foregrounds()
 
     def get_color_surface(self, bounding_box, color):
         """ Create surface filled by solid color
@@ -285,6 +288,25 @@ class Spectrum(Container, ScreensaverSpectrum):
 
         return reflections
 
+    def get_foregrounds(self):
+        """ Prepare spectrum foregrounds
+
+        :return: the list of spectrum foregrounds
+        """
+        foregrounds = []
+
+        for config in self.spectrum_configs:
+            if not config.get(FGR_FILENAME):
+                foregrounds.append(None)
+            else:
+                path = self.config_parser.get_path(config[FGR_FILENAME], self.config[SCREEN_SIZE])
+                b = self.image_util.load_pygame_image(path)
+                if b:
+                    foregrounds.append(b[1])
+
+        return foregrounds
+
+
     def open_pipe(self):
         """ Open named pipe  """
         
@@ -309,9 +331,10 @@ class Spectrum(Container, ScreensaverSpectrum):
         """ Start spectrum thread. """ 
         
         self.index = 0
-        self.set_background()        
+        self.set_background()
         self.set_bars()
         self.set_reflections()
+        self.set_foreground()
         
         self.run_flag = True
         self.start_data_source()
@@ -376,14 +399,34 @@ class Spectrum(Container, ScreensaverSpectrum):
             c.content = ("", self.reflection[self.index])
             c.bounding_box = pygame.Rect(0, 0, width, 0)
             c.visible = False
+
+    def set_foreground(self):
+        """ Set foreground image """
+
+        c = self.components[-1]
+
+        if not self.fgr or self.fgr[self.index] == None:
+            c.content = None
+            return
+
+        c.content = ("", self.fgr[self.index])
+        w = self.config[SCREEN_WIDTH]
+        h = self.config[SCREEN_HEIGHT]
+        size = c.content[1].get_size()
+
+        spectrum_x = self.spectrum_configs[self.index][SPECTRUM_X]
+        spectrum_y = self.spectrum_configs[self.index][SPECTRUM_Y]
+        c.content_x = int(spectrum_x + ((w - size[0])/2))
+        c.content_y = int(spectrum_y + ((h - size[1])/2))
     
     def refresh(self):
         """ Update spectrum """
         
         self.index = next(self.indexes)
-        self.set_background()        
+        self.set_background()
         self.set_bars()
         self.set_reflections()
+        self.set_foreground()
             
     def stop(self):
         """ Stop spectrum thread. """ 

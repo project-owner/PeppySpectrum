@@ -19,6 +19,7 @@ reflection.color =
 reflection.gradient =
 reflection.filename = reflection-1.png
 reflection.gap = 0
+fgr.filename =
 steps = 12
 
 [s.2]
@@ -42,6 +43,7 @@ reflection.color =
 reflection.gradient =
 reflection.filename = reflection-2.png
 reflection.gap = 0
+fgr.filename =
 steps = 12
 
 [s.3]
@@ -65,6 +67,7 @@ reflection.color =
 reflection.gradient =
 reflection.filename = reflection-3.png
 reflection.gap = 0
+fgr.filename =
 steps = 12
 
 [s.4]
@@ -88,6 +91,7 @@ reflection.color =
 reflection.gradient = (0, 0, 0, 0), (0, 0, 0, 100)
 reflection.filename =
 reflection.gap = 0
+fgr.filename =
 steps = 12
 
 [s.5]
@@ -111,6 +115,7 @@ reflection.color =
 reflection.gradient =
 reflection.filename =
 reflection.gap = 0
+fgr.filename =
 steps = 36
 
 [s.6]
@@ -134,4 +139,5 @@ reflection.color =
 reflection.gradient =
 reflection.filename =
 reflection.gap = 0
+fgr.filename =
 steps = 36

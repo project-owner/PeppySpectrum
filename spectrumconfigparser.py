@@ -76,6 +76,7 @@ BGR_TYPE = "bgr.type"
 BGR_COLOR = "bgr.color"
 BGR_GRADIENT = "bgr.gradient"
 BGR_FILENAME = "bgr.filename"
+FGR_FILENAME = "fgr.filename"
 REFLECTION_TYPE = "reflection.type"
 REFLECTION_COLOR = "reflection.color"
 REFLECTION_GRADIENT = "reflection.gradient"
@@ -243,6 +244,7 @@ class SpectrumConfigParser(object):
             spectrum[BAR_WIDTH] = c.getint(section, BAR_WIDTH)
             spectrum[BAR_HEIGHT] = c.getint(section, BAR_HEIGHT)
             spectrum[BAR_GAP] = c.getint(section, BAR_GAP)
+            spectrum[FGR_FILENAME] = c.get(section, FGR_FILENAME)
             spectrum[STEPS] = c.getint(section, STEPS)
 
             config.append(spectrum)
