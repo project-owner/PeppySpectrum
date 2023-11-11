@@ -1,3 +1,7 @@
+## Malevich Edition 2023.11.10
+
+Added support for foreground images.
+
 ## Cezanne Edition 2022.06.06
 
 Initial commit.
