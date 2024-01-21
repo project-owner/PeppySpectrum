@@ -1,4 +1,4 @@
-# Copyright 2018-2022 Peppy Player peppy.player@gmail.com
+# Copyright 2018-2024 Peppy Player peppy.player@gmail.com
 # 
 # This file is part of Peppy Player.
 # 
@@ -68,13 +68,14 @@ class Spectrum(Container, ScreensaverSpectrum):
         self.pipe = None
         self.spectrum_configs = self.config_parser.spectrum_configs
         self.indexes = cycle(range(len(self.spectrum_configs)))
-        self.seconds = 0 
-
+        self.seconds = 0
+        self.test_iterator = 0
         self.init_spectrums()
         self.init_container()
 
         if "win" in sys.platform:
             self.windows = True
+            self.config[UPDATE_UI_INTERVAL] = 0.1
         else:
             self.windows = False
             thread = Thread(target=self.open_pipe)
@@ -124,9 +125,11 @@ class Spectrum(Container, ScreensaverSpectrum):
         c = Component(self.util) # bgr
         self.add_component(c)
         for _ in range(self.config[SIZE]):
-            c = Component(self.util)
+            c = Component(self.util) # bar
             self.add_component(c)
-            c = Component(self.util)
+            c = Component(self.util) # reflection
+            self.add_component(c)
+            c = Component(self.util) # topping
             self.add_component(c)
         c = Component(self.util) # fgr
         self.add_component(c)
@@ -137,6 +140,7 @@ class Spectrum(Container, ScreensaverSpectrum):
         self.bgr = self.get_backgrounds()
         self.bar = self.get_bars()
         self.reflection = self.get_reflections()
+        self.toppings = self.get_toppings()
         self.fgr = self.get_foregrounds()
 
     def get_color_surface(self, bounding_box, color):
@@ -261,14 +265,14 @@ class Spectrum(Container, ScreensaverSpectrum):
         return bars
 
     def get_reflections(self):
-        """ Prepare refleactions
+        """ Prepare reflections
         
         :return: the list of reflections
         """
         reflections = []
 
         for config in self.spectrum_configs:
-            if not config[REFLECTION_TYPE]:
+            if not config.get(REFLECTION_TYPE, None):
                 reflections.append(None)
                 continue
 
@@ -287,6 +291,21 @@ class Spectrum(Container, ScreensaverSpectrum):
                 reflections.append(self.get_extended_image_surface((w, h), path))
 
         return reflections
+
+    def get_toppings(self):
+        """ Prepare toppings
+
+        :return: the list of frequency bars
+        """
+        toppings = []
+
+        for i, config in enumerate(self.spectrum_configs):
+            if not config.get(TOPPING_HEIGHT, None):
+                toppings.append(None)
+            else:
+                toppings.append(self.bar[i])
+
+        return toppings
 
     def get_foregrounds(self):
         """ Prepare spectrum foregrounds
@@ -333,9 +352,13 @@ class Spectrum(Container, ScreensaverSpectrum):
         self.index = 0
         self.set_background()
         self.set_bars()
+        self.reflection_gap = self.spectrum_configs[self.index].get(REFLECTION_GAP, 0)
         self.set_reflections()
+        self.set_toppings()
         self.set_foreground()
         
+        self.init_variables()
+
         self.run_flag = True
         self.start_data_source()
         thread = Thread(target=self.update_ui)
@@ -378,11 +401,11 @@ class Spectrum(Container, ScreensaverSpectrum):
             c.content = ("", self.bar[self.index])
             c.bounding_box = pygame.Rect(0, 0, width, height)
             c.visible = False
-            
+
     def set_reflections(self):
         """ Set reflection bars """
         
-        if self.reflection == None:
+        if self.reflection == [None]:
             return
 
         width = self.spectrum_configs[self.index][BAR_WIDTH]
@@ -399,6 +422,31 @@ class Spectrum(Container, ScreensaverSpectrum):
             c.content = ("", self.reflection[self.index])
             c.bounding_box = pygame.Rect(0, 0, width, 0)
             c.visible = False
+
+    def set_toppings(self):
+        """ Set spectrum toppings  """
+
+        width = self.spectrum_configs[self.index][BAR_WIDTH]
+        height = self.spectrum_configs[self.index][BAR_HEIGHT]
+        bar_gap = self.spectrum_configs[self.index][BAR_GAP]
+
+        if self.reflection == [None]:
+            n = 1
+        else:
+            n = 2
+
+        for r in range(self.config[SIZE]):
+            c = self.components[r + 1 + self.config[SIZE] * n]
+            origin_x = self.spectrum_configs[self.index][ORIGIN_X]
+            spectrum_x = self.spectrum_configs[self.index][SPECTRUM_X]
+            c.content_x = origin_x + spectrum_x + (r * (width + bar_gap))
+            origin_y = self.spectrum_configs[self.index][ORIGIN_Y]
+            spectrum_y = self.spectrum_configs[self.index][SPECTRUM_Y]
+            c.content_y = origin_y + spectrum_y - height
+            c.content = ("", self.toppings[self.index])
+            c.bounding_box = pygame.Rect(0, 0, width, height)
+            c.visible = False
+            c.initialized = False
 
     def set_foreground(self):
         """ Set foreground image """
@@ -422,11 +470,25 @@ class Spectrum(Container, ScreensaverSpectrum):
     def refresh(self):
         """ Update spectrum """
         
+        self.test_iterator = 0
         self.index = next(self.indexes)
+        self.init_variables()
         self.set_background()
         self.set_bars()
         self.set_reflections()
+        self.set_toppings()
         self.set_foreground()
+
+    def init_variables(self):
+        """ Init variables for new spectrum """
+
+        self.height = self.spectrum_configs[self.index][BAR_HEIGHT]
+        self.step = int(self.height / self.spectrum_configs[self.index][STEPS])
+        self.origin_y = self.spectrum_configs[self.index][ORIGIN_Y]
+        self.spectrum_y = self.spectrum_configs[self.index][SPECTRUM_Y]
+        self.unit = self.height / self.config[MAX_VALUE]
+        self.topping_height = self.spectrum_configs[self.index][TOPPING_HEIGHT]
+        self.topping_step = self.spectrum_configs[self.index][TOPPING_STEP]
             
     def stop(self):
         """ Stop spectrum thread. """ 
@@ -471,28 +533,47 @@ class Spectrum(Container, ScreensaverSpectrum):
 
         return data
 
+    def get_test_data(self):
+        """ Get test data
+
+        :return: list of test data
+        """
+        data = []
+        mask = 0b11111111
+        test_data = None
+
+        if self.config[USE_TEST_DATA]:
+            test_data = TEST_DATA[self.config[USE_TEST_DATA]]
+
+        for n in range(self.config[SIZE]):
+            if test_data == None:
+                v = int((randrange(0, int(self.config[MAX_VALUE]))))
+            else:
+                if len(test_data) == 8:
+                    v = test_data[self.test_iterator][n]
+                else:
+                    v = test_data[n]
+
+            data.append(v & mask)
+            data.append((v >> 8) & mask)
+            data.append((v >> 16) & mask)
+            data.append((v >> 24) & mask)
+
+        if test_data and len(test_data) == 8:
+            if self.test_iterator == len(test_data) - 1:
+                self.test_iterator = 0
+            else:
+                self.test_iterator += 1
+
+        return data
+
     def set_values(self):
         """ Get signal from the named pipe and update spectrum bars. """ 
 
         data = []
 
         if self.windows:
-            data = []
-            mask = 0b11111111
-
-            test_data = None
-            if self.config[USE_TEST_DATA]:
-                test_data = TEST_DATA[self.config[USE_TEST_DATA]]
-
-            for n in range(self.config[SIZE]):
-                if self.config[USE_TEST_DATA]:
-                    v = test_data[n]
-                else:
-                    v = int((randrange(0, int(self.config[MAX_VALUE]))))
-                data.append(v & mask)
-                data.append((v >> 8) & mask)
-                data.append((v >> 16) & mask)
-                data.append((v >> 24) & mask)
+            data = self.get_test_data()
         else:
             try:
                 if self.pipe == None:
@@ -508,55 +589,96 @@ class Spectrum(Container, ScreensaverSpectrum):
             return
             
         words = int(length / 4)
-        height = self.spectrum_configs[self.index][BAR_HEIGHT]
-        step = int(height / self.spectrum_configs[self.index][STEPS])
-        origin_y = self.spectrum_configs[self.index][ORIGIN_Y]
-        spectrum_y = self.spectrum_configs[self.index][SPECTRUM_Y]
-        unit = height / self.config[MAX_VALUE]
-        reflection_gap = 0
-        try:
-            reflection_gap = self.spectrum_configs[self.index][REFLECTION_GAP]
-        except:
-            pass
 
         for m in range(words):
             v = data[4 * m] + (data[4 * m + 1] << 8) + (data[4 * m + 2] << 16) + (data[4 * m + 3] << 24)
-            v = v * unit
+            v = v * self.unit
 
             if v <= 0:
                 steps = 0
-            elif v % step == 0:
-                steps = int(v / step)
+            elif v % self.step == 0:
+                steps = int(v / self.step)
             else:
-                steps = int(v / step) + 1
+                steps = int(v / self.step) + 1
             
-            h = steps * step
+            new_height = steps * self.step
             i = m + 1
             
-            comp = self.components[i]
-            comp.bounding_box.h = h
-            comp.bounding_box.y = height - h
-            comp.content_y = int(spectrum_y + origin_y - height + comp.bounding_box.y)
-            comp.visible = True
+            self.set_bar_y(i, new_height)
+            self.set_reflection_y(i, new_height)
+            self.set_topping_y(i, new_height)
 
-            comp = self.components[i + self.config[SIZE]]
-            if comp.content == None:
-                continue
-            comp.bounding_box.h = h
-            comp.bounding_box.y = 0
-            comp.content_y = int(spectrum_y + origin_y + reflection_gap)
+    def set_bar_y(self, index, new_height):
+        """ Set bar Y coordinate
+
+        :param index: element index
+        :param new_height: element new height
+        """
+        comp = self.components[index]
+        comp.bounding_box.h = new_height
+        comp.bounding_box.y = self.height - new_height
+        comp.content_y = int(self.spectrum_y + self.origin_y - new_height)
+        comp.visible = True
+
+    def set_reflection_y(self, index, new_height):
+        """ Set reflection Y coordinate
+
+        :param index: element index
+        :param new_height: element new height
+        """
+        if self.reflection == [None]:
+            return
+
+        comp = self.components[index + self.config[SIZE]]
+        comp.bounding_box.h = new_height
+        comp.bounding_box.y = 0
+        comp.content_y = int(self.spectrum_y + self.origin_y + self.reflection_gap)
+        comp.visible = True
+
+    def set_topping_y(self, index, new_height):
+        """ Set topping Y coordinate
+
+        :param index: element index
+        :param new_height: element new height
+        """
+        if self.topping_height == None or self.topping_step == None:
+            return
+
+        n = 1
+        if self.reflection != [None]:
+            n = 2
+
+        m = index + self.config[SIZE] * n
+        comp = self.components[m]
+        comp.bounding_box.h = self.topping_height
+        y_0 = self.spectrum_y + self.origin_y
+        c_y = int(y_0 - new_height)
+        if c_y >= y_0:
+            c_y = y_0
+
+        if not comp.initialized:
+            comp.content_y = c_y
+            comp.initialized = True
+            return
+
+        if c_y > comp.content_y + self.topping_step + self.topping_height:
+            comp.content_y += self.topping_step
+            comp.bounding_box.y = self.height - (y_0 - comp.content_y) + 1
             comp.visible = True
+        else:
+            comp.content_y = c_y - self.topping_height - self.topping_step
+            comp.visible = False
 
     def update_ui(self):
         """ Update UI Thread method. """ 
-    
+
         while self.run_flag:
-            self.clean_draw_update()            
+            self.clean_draw_update()
             time.sleep(self.config[UPDATE_UI_INTERVAL])
 
     def start_display_output(self):
         """ Start main loop in standalone mode """
-        
+
         pygame.event.clear()
         while self.run_flag:
             for event in pygame.event.get():
@@ -576,7 +698,7 @@ class Spectrum(Container, ScreensaverSpectrum):
 
     def exit(self):
         """ Exit program """
-        
+
         pygame.quit()
 
         if hasattr(self, "malloc_trim"):

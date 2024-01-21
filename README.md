@@ -1,4 +1,8 @@
-## Malevich Edition 2023.11.10
+## Malevich Edition 2024.01.20
+
+Implemented bar toppings
+
+## Kandinsky Edition 2023.11.10
 
 Added support for foreground images.
 

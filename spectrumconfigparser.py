@@ -1,4 +1,4 @@
-# Copyright 2022 PeppyMeter peppy.player@gmail.com
+# Copyright 2022-2024 PeppyMeter peppy.player@gmail.com
 # 
 # This file is part of PeppyMeter.
 # 
@@ -90,6 +90,8 @@ BAR_WIDTH = "bar.width"
 BAR_HEIGHT = "bar.height"
 BAR_GAP = "bar.gap"
 STEPS = "steps"
+TOPPING_HEIGHT = "topping.height"
+TOPPING_STEP = "topping.step"
 
 AVAILABLE_SPECTRUM_NAMES = "available.spectrum.names"
 SCREEN_SIZE = "screen.size"
@@ -102,7 +104,8 @@ SCREEN_HEIGHT = "screen.height"
 TEST_DATA = {
     "test1": [98, 76, 84, 56, 64, 45, 78, 54, 37, 48, 53, 34, 66, 48, 24, 39, 58, 46, 34, 43, 25, 46, 62, 53, 36, 48, 87, 52, 36, 44],
     "test2": [42, 65, 34, 84, 56, 27, 48, 76, 53, 33, 24, 45, 64, 37, 28, 43, 65, 82, 74, 58, 26, 48, 62, 45, 18, 35, 53, 28, 36, 56],
-    "test3": [63, 47, 78, 54, 32, 18, 42, 62, 68, 55, 34, 57, 74, 74, 61, 42, 24, 46, 68, 44, 48, 79, 69, 46, 27, 54, 33, 65, 86, 58]
+    "test3": [63, 47, 78, 54, 32, 18, 42, 62, 68, 55, 34, 57, 74, 74, 61, 42, 24, 46, 68, 44, 48, 79, 69, 46, 27, 54, 33, 65, 86, 58],
+    "test4": [[0] * 30, [25] * 30, [50] * 30, [75] * 30, [100] * 30, [75] * 30, [50] * 30, [25] * 30]
 }
 
 class SpectrumConfigParser(object):
@@ -229,27 +232,41 @@ class SpectrumConfigParser(object):
             spectrum[SPECTRUM_X] = c.getint(section, SPECTRUM_X)
             spectrum[SPECTRUM_Y] = c.getint(section, SPECTRUM_Y)
             spectrum[BGR_TYPE] = c.get(section, BGR_TYPE)
-            spectrum[BGR_COLOR] = self.get_color(c.get(section, BGR_COLOR))
-            spectrum[BGR_GRADIENT] = self.get_gradient(c.get(section, BGR_GRADIENT))
-            spectrum[BGR_FILENAME] = c.get(section, BGR_FILENAME)
-            spectrum[REFLECTION_TYPE] = c.get(section, REFLECTION_TYPE)
-            spectrum[REFLECTION_COLOR] = self.get_color(c.get(section, REFLECTION_COLOR))
-            spectrum[REFLECTION_GRADIENT] = self.get_gradient(c.get(section, REFLECTION_GRADIENT))
-            spectrum[REFLECTION_FILENAME] = c.get(section, REFLECTION_FILENAME)
-            spectrum[REFLECTION_GAP] = c.getint(section, REFLECTION_GAP)
+            spectrum[BGR_COLOR] = self.get_color(c.get(section, BGR_COLOR, fallback=None))
+            spectrum[BGR_GRADIENT] = self.get_gradient(c.get(section, BGR_GRADIENT, fallback=None))
+            spectrum[BGR_FILENAME] = c.get(section, BGR_FILENAME, fallback=None)
+            spectrum[REFLECTION_TYPE] = c.get(section, REFLECTION_TYPE, fallback=None)
+            spectrum[REFLECTION_COLOR] = self.get_color(c.get(section, REFLECTION_COLOR, fallback=None))
+            spectrum[REFLECTION_GRADIENT] = self.get_gradient(c.get(section, REFLECTION_GRADIENT, fallback=None))
+            spectrum[REFLECTION_FILENAME] = c.get(section, REFLECTION_FILENAME, fallback=None)
+            spectrum[REFLECTION_GAP] = c.getint(section, REFLECTION_GAP, fallback=None)
             spectrum[BAR_TYPE] = c.get(section, BAR_TYPE)
-            spectrum[BAR_COLOR] = self.get_color(c.get(section, BAR_COLOR))
-            spectrum[BAR_GRADIENT] = self.get_gradient(c.get(section, BAR_GRADIENT))
-            spectrum[BAR_FILENAME] = c.get(section, BAR_FILENAME)
+            spectrum[BAR_COLOR] = self.get_color(c.get(section, BAR_COLOR, fallback=None))
+            spectrum[BAR_GRADIENT] = self.get_gradient(c.get(section, BAR_GRADIENT, fallback=None))
+            spectrum[BAR_FILENAME] = c.get(section, BAR_FILENAME, fallback=None)
             spectrum[BAR_WIDTH] = c.getint(section, BAR_WIDTH)
             spectrum[BAR_HEIGHT] = c.getint(section, BAR_HEIGHT)
             spectrum[BAR_GAP] = c.getint(section, BAR_GAP)
-            spectrum[FGR_FILENAME] = c.get(section, FGR_FILENAME)
+            spectrum[TOPPING_HEIGHT] = self.get_int(c.get(section, TOPPING_HEIGHT))
+            spectrum[TOPPING_STEP] = self.get_int(c.get(section, TOPPING_STEP))
+            spectrum[FGR_FILENAME] = c.get(section, FGR_FILENAME, fallback=None)
             spectrum[STEPS] = c.getint(section, STEPS)
 
             config.append(spectrum)
         
         return config
+
+    def get_int(self, str):
+        """ Parse string as integer
+
+        :param str: string representing integer
+
+        :return: integer number
+        """
+        if str == None or len(str.strip()) == 0:
+            return None
+
+        return int(str)
 
     def get_color(self, str):
         """ Parse single color section of the configuration file
@@ -258,7 +275,7 @@ class SpectrumConfigParser(object):
 
         :return: color tuple
         """
-        if len(str.strip()) == 0:
+        if str == None or len(str.strip()) == 0:
             return None
 
         a = str.split(",")
@@ -271,7 +288,7 @@ class SpectrumConfigParser(object):
 
         :return: list of gradient colors
         """
-        if len(str.strip()) == 0:
+        if str == None or len(str.strip()) == 0:
             return None
 
         gradient = []
