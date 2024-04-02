@@ -303,7 +303,4 @@ class SpectrumConfigParser(object):
 
         :return: the path composed from screensize
         """
-        if self.standalone:
-            return os.path.join(os.getcwd(), self.config[BASE_FOLDER], size, filename)
-        else:
-            return os.path.join(os.getcwd(), PACKAGE_SCREENSAVER, SPECTRUM, size, filename)
+        return os.path.join(self.config[BASE_FOLDER], size, filename)
