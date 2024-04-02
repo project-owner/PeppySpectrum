@@ -1,5 +1,6 @@
 [current]
 spectrum =
+base.folder =
 spectrum.folder = 480x320
 update.period = 10
 max.value = 100

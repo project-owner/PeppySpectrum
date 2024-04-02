@@ -81,6 +81,7 @@ TOPPING_HEIGHT = "topping.height"
 TOPPING_STEP = "topping.step"
 
 AVAILABLE_SPECTRUM_NAMES = "available.spectrum.names"
+BASE_FOLDER = "base.folder"
 SPECTRUM_FOLDER = "spectrum.folder"
 PIPE_BUFFER_SIZE = "pipe.buffer.size"
 PIPE_POLLING_INTERVAL = "pipe_polling_inerval"
@@ -108,7 +109,7 @@ class SpectrumConfigParser(object):
         
         :return: dictionary with properties from the config.txt
         """
-        config_path = self.get_path(FILE_CONFIG)
+        config_path = os.path.join(os.getcwd(), FILE_CONFIG)
 
         if not os.path.exists(config_path):
             print(f"Cannot read file: {config_path}")
@@ -172,6 +173,7 @@ class SpectrumConfigParser(object):
             print("Invalid spectrum folder name: " + spectrum_folder)
             os._exit(0)
 
+        config[BASE_FOLDER] = c.get(CURRENT, BASE_FOLDER)
         config[SPECTRUM_FOLDER] = spectrum_folder
         config[SCREEN_WIDTH], config[SCREEN_HEIGHT] = self.get_spectrum_size(spectrum_folder)
 
@@ -299,9 +301,9 @@ class SpectrumConfigParser(object):
         :param filename: the filename
         :param size: the screen size/folder name
 
-        :return: the path composed from screensize and stanalone glag
+        :return: the path composed from screensize
         """
         if self.standalone:
-            return os.path.join(os.getcwd(), size, filename)
+            return os.path.join(os.getcwd(), self.config[BASE_FOLDER], size, filename)
         else:
             return os.path.join(os.getcwd(), PACKAGE_SCREENSAVER, SPECTRUM, size, filename)
