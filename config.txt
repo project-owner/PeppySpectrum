@@ -1,8 +1,6 @@
 [current]
 spectrum =
-screen.size = medium
-screen.width = 480
-screen.height = 320
+spectrum.folder = 480x320
 update.period = 10
 max.value = 100
 pipe.name = /home/pi/myfifosa

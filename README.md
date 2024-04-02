@@ -1,3 +1,9 @@
+## Picasso Edition 2024.04.01
+
+* Redesigned spectrum folders structure. Introduced naming convention for spectrum folders.
+* Renamed Component and Container classes.
+* Added ability to start a spectrum from a master updater.
+
 ## Malevich Edition 2024.01.20
 
 Implemented bar toppings

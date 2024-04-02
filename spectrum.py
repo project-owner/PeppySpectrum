@@ -21,8 +21,8 @@ import logging
 import sys
 import os
 
-from component import Component
-from container import Container
+from spectrumcomponent import SpectrumComponent
+from spectrumcontainer import SpectrumContainer
 from random import randrange
 from threading import Thread
 from itertools import cycle
@@ -30,7 +30,7 @@ from screensaverspectrum import ScreensaverSpectrum
 from spectrumutil import SpectrumUtil
 from spectrumconfigparser import *
 
-class Spectrum(Container, ScreensaverSpectrum):
+class Spectrum(SpectrumContainer, ScreensaverSpectrum):
     """ Spectrum Analyzer screensaver plug-in. """
         
     def __init__(self, util=None, standalone=False):
@@ -61,9 +61,9 @@ class Spectrum(Container, ScreensaverSpectrum):
         if self.standalone:
             screen_rect = pygame.Rect(0, 0, self.config[SCREEN_WIDTH], self.config[SCREEN_HEIGHT])
             self.init_display()
-            Container.__init__(self, self.util, bounding_box=screen_rect)
+            SpectrumContainer.__init__(self, self.util, bounding_box=screen_rect)
         else:
-            Container.__init__(self, util, bounding_box=util.screen_rect, background=self.bg[1], content=self.bg[2], image_filename=self.bg[3])
+            SpectrumContainer.__init__(self, util, bounding_box=util.screen_rect, background=self.bg[1], content=self.bg[2], image_filename=self.bg[3])
 
         self.pipe = None
         self.spectrum_configs = self.config_parser.spectrum_configs
@@ -122,16 +122,16 @@ class Spectrum(Container, ScreensaverSpectrum):
     def init_container(self):
         """ Initialize container """
         
-        c = Component(self.util) # bgr
+        c = SpectrumComponent(self.util) # bgr
         self.add_component(c)
         for _ in range(self.config[SIZE]):
-            c = Component(self.util) # bar
+            c = SpectrumComponent(self.util) # bar
             self.add_component(c)
-            c = Component(self.util) # reflection
+            c = SpectrumComponent(self.util) # reflection
             self.add_component(c)
-            c = Component(self.util) # topping
+            c = SpectrumComponent(self.util) # topping
             self.add_component(c)
-        c = Component(self.util) # fgr
+        c = SpectrumComponent(self.util) # fgr
         self.add_component(c)
     
     def init_spectrums(self):
@@ -231,11 +231,11 @@ class Spectrum(Container, ScreensaverSpectrum):
                 b = b.convert_alpha()
                 backgrounds.append(b)
             elif config[BGR_TYPE] == "image":
-                path = self.config_parser.get_path(config[BGR_FILENAME], self.config[SCREEN_SIZE])
+                path = self.config_parser.get_path(config[BGR_FILENAME], self.config[SPECTRUM_FOLDER])
                 b = self.image_util.load_pygame_image(path)
                 backgrounds.append(b[1])
             elif config[BGR_TYPE] == "image.extended":
-                path = self.config_parser.get_path(config[BGR_FILENAME], self.config[SCREEN_SIZE])
+                path = self.config_parser.get_path(config[BGR_FILENAME], self.config[SPECTRUM_FOLDER])
                 backgrounds.append(self.get_extended_image_surface((w, h), path))
 
         return backgrounds
@@ -256,10 +256,10 @@ class Spectrum(Container, ScreensaverSpectrum):
             elif config[BAR_TYPE] == "gradient":
                 bars.append(self.get_gradient_surface(((w, h)), config[BAR_GRADIENT]))
             elif config[BAR_TYPE] == "image":
-                path = self.config_parser.get_path(config[BAR_FILENAME], self.config[SCREEN_SIZE])
+                path = self.config_parser.get_path(config[BAR_FILENAME], self.config[SPECTRUM_FOLDER])
                 bars.append(self.get_image_surface((w, h), path))
             elif config[BAR_TYPE] == "image.extended":
-                path = self.config_parser.get_path(config[BAR_FILENAME], self.config[SCREEN_SIZE])
+                path = self.config_parser.get_path(config[BAR_FILENAME], self.config[SPECTRUM_FOLDER])
                 bars.append(self.get_extended_image_surface((w, h), path))
         
         return bars
@@ -284,10 +284,10 @@ class Spectrum(Container, ScreensaverSpectrum):
             elif config[REFLECTION_TYPE] == "gradient":
                 reflections.append(self.get_gradient_surface(((w, h)), config[REFLECTION_GRADIENT]))
             elif config[REFLECTION_TYPE] == "image":
-                path = self.config_parser.get_path(config[REFLECTION_FILENAME], self.config[SCREEN_SIZE])
+                path = self.config_parser.get_path(config[REFLECTION_FILENAME], self.config[SPECTRUM_FOLDER])
                 reflections.append(self.get_image_surface((w, h), path))
             elif config[REFLECTION_TYPE] == "image.extended":
-                path = self.config_parser.get_path(config[REFLECTION_FILENAME], self.config[SCREEN_SIZE])
+                path = self.config_parser.get_path(config[REFLECTION_FILENAME], self.config[SPECTRUM_FOLDER])
                 reflections.append(self.get_extended_image_surface((w, h), path))
 
         return reflections
@@ -318,7 +318,7 @@ class Spectrum(Container, ScreensaverSpectrum):
             if not config.get(FGR_FILENAME):
                 foregrounds.append(None)
             else:
-                path = self.config_parser.get_path(config[FGR_FILENAME], self.config[SCREEN_SIZE])
+                path = self.config_parser.get_path(config[FGR_FILENAME], self.config[SPECTRUM_FOLDER])
                 b = self.image_util.load_pygame_image(path)
                 if b:
                     foregrounds.append(b[1])
@@ -361,13 +361,15 @@ class Spectrum(Container, ScreensaverSpectrum):
 
         self.run_flag = True
         self.start_data_source()
-        thread = Thread(target=self.update_ui)
-        thread.start()
-        pygame.event.clear()
 
         if hasattr(self, "callback_start"):
             self.callback_start(self)
-    
+        else:
+            thread = Thread(target=self.update_ui)
+            thread.start()
+
+        pygame.event.clear()
+
     def set_background(self):
         """ Set background image """
         

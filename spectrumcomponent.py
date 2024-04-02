@@ -1,4 +1,4 @@
-# Copyright 2016-2021 Peppy Player peppy.player@gmail.com
+# Copyright 2016-2024 Peppy Player peppy.player@gmail.com
 # 
 # This file is part of Peppy Player.
 # 
@@ -17,7 +17,7 @@
 
 import pygame
 
-class Component(object):
+class SpectrumComponent(object):
     """ Represent the lowest UI component level.    
     This is the only class which knows how to draw on Pygame Screen.
     """

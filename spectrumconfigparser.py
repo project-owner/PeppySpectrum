@@ -35,19 +35,6 @@ EXIT_ON_TOUCH = "exit.on.touch"
 USE_LOGGING = "use.logging"
 USE_TEST_DATA = "use.test.data"
 
-SCREEN_SIZE = "screen.size"
-SMALL = "small"
-MEDIUM = "medium"
-LARGE = "large"
-WIDE = "wide"
-WIDE_WIDTH = 1280
-WIDE_HEIGHT = 400
-LARGE_WIDTH = 800
-LARGE_HEIGHT = 480
-MEDIUM_WIDTH = 480
-MEDIUM_HEIGHT = 320
-SMALL_WIDTH = 320
-SMALL_HEIGHT = 240
 DEFAULT_DEPTH = 32
 DEFAULT_FRAME_RATE = 30
 
@@ -94,7 +81,7 @@ TOPPING_HEIGHT = "topping.height"
 TOPPING_STEP = "topping.step"
 
 AVAILABLE_SPECTRUM_NAMES = "available.spectrum.names"
-SCREEN_SIZE = "screen.size"
+SPECTRUM_FOLDER = "spectrum.folder"
 PIPE_BUFFER_SIZE = "pipe.buffer.size"
 PIPE_POLLING_INTERVAL = "pipe_polling_inerval"
 PIPE_SIZE = "pipe_size"
@@ -141,7 +128,6 @@ class SpectrumConfigParser(object):
             else:    
                 config[AVAILABLE_SPECTRUM_NAMES] = [spectrum]
 
-        config[SCREEN_SIZE] = c.get(CURRENT, SCREEN_SIZE)
         config[UPDATE_PERIOD] = c.getint(CURRENT, UPDATE_PERIOD)
         config[PIPE_NAME] = c.get(CURRENT, PIPE_NAME)
         config[PIPE_BUFFER_SIZE] = 1048576 # as defined for Raspberry OS in /proc/sys/fs/pipe-max-size
@@ -181,37 +167,45 @@ class SpectrumConfigParser(object):
             else:
                 logging.disable(logging.CRITICAL)
 
-        if config[SCREEN_SIZE] == MEDIUM:
-            config[SCREEN_WIDTH] = MEDIUM_WIDTH
-            config[SCREEN_HEIGHT] = MEDIUM_HEIGHT
-        elif config[SCREEN_SIZE] == SMALL:
-            config[SCREEN_WIDTH] = SMALL_WIDTH
-            config[SCREEN_HEIGHT] = SMALL_HEIGHT
-        elif config[SCREEN_SIZE] == LARGE:
-            config[SCREEN_WIDTH] = LARGE_WIDTH
-            config[SCREEN_HEIGHT] = LARGE_HEIGHT
-        elif config[SCREEN_SIZE] == WIDE:
-            config[SCREEN_WIDTH] = WIDE_WIDTH
-            config[SCREEN_HEIGHT] = WIDE_HEIGHT
-        else:
-            folder = self.get_path(config[SCREEN_SIZE])
-            if not os.path.isdir(folder):
-                logging.debug(f"Not supported screen size: {config[SCREEN_SIZE]}")
-                os._exit(0)
-            try:
-                config[SCREEN_WIDTH] = c.getint(CURRENT, SCREEN_WIDTH)
-                config[SCREEN_HEIGHT] = c.getint(CURRENT, SCREEN_HEIGHT)
-            except:
-                pass
+        spectrum_folder = c.get(CURRENT, SPECTRUM_FOLDER)
+        if not spectrum_folder or not spectrum_folder[0].isdigit():
+            print("Invalid spectrum folder name: " + spectrum_folder)
+            os._exit(0)
+
+        config[SPECTRUM_FOLDER] = spectrum_folder
+        config[SCREEN_WIDTH], config[SCREEN_HEIGHT] = self.get_spectrum_size(spectrum_folder)
 
         return config
+    
+    def get_spectrum_size(self, spectrum_folder):
+        """ Get spectrum size from the spectrum folder name using convention:
+        480x320-any_text, where 480-spectrum width, 320-spectrum height, followed by arbitrary text
+        
+        :param meter_folder: meter folder in above-mentioned convention
+
+        :return: meter size tuple (width, height)
+        """
+        w = h = ""
+        width_complete = False
+
+        for c in spectrum_folder:
+            if c.isdigit() and not width_complete:
+                w += c
+            elif c == "x":
+                width_complete = True
+            elif c.isdigit() and width_complete:
+                h += c
+            else:
+                break
+
+        return (int(w), int(h))
 
     def get_spectrum_configs(self):
         """ Parse size specific configuration file (spectrum.txt)
         
         :return: dictionary with properties from the spectrum.txt
         """
-        spectrum_config_path = self.get_path(FILE_SPECTRUM_CONFIG, self.config[SCREEN_SIZE])
+        spectrum_config_path = self.get_path(FILE_SPECTRUM_CONFIG, self.config[SPECTRUM_FOLDER])
         if not os.path.exists(spectrum_config_path):
             print(f"Cannot read file: {spectrum_config_path}")
             os._exit(0)
