@@ -72,6 +72,7 @@ class Spectrum(SpectrumContainer, ScreensaverSpectrum):
         self.test_iterator = 0
         self.init_spectrums()
         self.init_container()
+        self.height_adjuster = 1.0
 
         if "win" in sys.platform:
             self.windows = True
@@ -603,7 +604,7 @@ class Spectrum(SpectrumContainer, ScreensaverSpectrum):
             else:
                 steps = int(v / self.step) + 1
             
-            new_height = steps * self.step
+            new_height = steps * self.step * self.height_adjuster
             i = m + 1
             
             self.set_bar_y(i, new_height)
