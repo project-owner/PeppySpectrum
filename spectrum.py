@@ -79,7 +79,7 @@ class Spectrum(SpectrumContainer, ScreensaverSpectrum):
             self.config[UPDATE_UI_INTERVAL] = 0.1
         else:
             self.windows = False
-            thread = Thread(target=self.open_pipe)
+            thread = Thread(target=self.open_pipe, daemon=True)
             thread.start()
 
     def init_display(self):
@@ -511,7 +511,7 @@ class Spectrum(SpectrumContainer, ScreensaverSpectrum):
 
         self.flush_pipe_buffer()
         self.run_datasource = True
-        thread = Thread(target=self.get_data)
+        thread = Thread(target=self.get_data, daemon=True)
         thread.start()
         
     def get_data(self):
@@ -528,6 +528,11 @@ class Spectrum(SpectrumContainer, ScreensaverSpectrum):
         while True:
             try:
                 tmp_data = os.read(self.pipe, self.config[PIPE_SIZE])
+                if len(tmp_data) == 0:
+                    # End of file: no process holds the pipe open for writing.
+                    # Return what was read so far instead of looping until
+                    # a writer appears.
+                    break
                 if len(tmp_data) == self.config[PIPE_SIZE]:
                     data = tmp_data
                 time.sleep(self.config[PIPE_POLLING_INTERVAL])
